@@ -335,14 +335,14 @@ def process_single_image(
         use_18_regions=True,
     )
 
-    if valid_ratio < 10.0:
-        args.inject = 3
-        if is_main_process:
-            print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% < 10%，设置 inject=3")
-    else:
-        args.inject = 5
-        if is_main_process:
-            print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% ≥ 10%，设置 inject=5")
+    # if valid_ratio < 10.0:
+    #     args.inject = 3
+    #     if is_main_process:
+    #         print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% < 10%，设置 inject=3")
+    # else:
+    #     args.inject = 5
+    #     if is_main_process:
+    #         print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% ≥ 10%，设置 inject=5")
 
     # 适配编辑区域 mask 到图像尺度
     if raw_mask.shape[0] != new_h or raw_mask.shape[1] != new_w:
@@ -621,7 +621,7 @@ if __name__ == "__main__":
     parser.add_argument("--guidance", type=float, default=5.5)
     parser.add_argument("--num_steps", type=int, default=25)
     parser.add_argument("--attack_start_step", type=int, default=20)
-    parser.add_argument("--inject", type=int, default=2)
+    parser.add_argument("--inject", type=int, default=5)
     parser.add_argument("--seed", type=int, default=2)
 
     parser.add_argument("--offload", action="store_true")
