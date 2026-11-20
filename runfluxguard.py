@@ -335,14 +335,14 @@ def process_single_image(
         use_18_regions=True,
     )
 
-    if valid_ratio < 10.0:
-        args.inject = 3
-        if is_main_process:
-            print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% < 10%，设置 inject=3")
-    else:
-        args.inject = 5
-        if is_main_process:
-            print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% ≥ 10%，设置 inject=5")
+    # if valid_ratio < 10.0:
+    #     args.inject = 3
+    #     if is_main_process:
+    #         print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% < 10%，设置 inject=3")
+    # else:
+    #     args.inject = 5
+    #     if is_main_process:
+    #         print(f"[INFO] 有效区域占比 {valid_ratio:.2f}% ≥ 10%，设置 inject=5")
 
     # 适配编辑区域 mask 到图像尺度
     if raw_mask.shape[0] != new_h or raw_mask.shape[1] != new_w:
@@ -610,18 +610,18 @@ if __name__ == "__main__":
 
     parser.add_argument("--name", default="flux-dev", type=str)
 
-    parser.add_argument("--source_img_folder", default="/share/w/Newcele/target4", type=str)
-    parser.add_argument("--adv_img_folder", default="/share/w/target", type=str)  # 含4张对抗图的文件夹
+    parser.add_argument("--source_img_folder", default="/share/w", type=str)
+    parser.add_argument("--adv_img_folder", default="/share/w", type=str)  # 含4张对抗图的文件夹
     parser.add_argument("--adv_img_index", type=int, default=3, help="从对抗文件夹选第几张（0-3，按名称自然排序）")
     parser.add_argument("--source_prompt", default="A person", type=str)
     parser.add_argument("--target_prompt", default="A person wearing red lipstick and red-purple hair", type=str)
 
     parser.add_argument("--feature_path", default="feature", type=str)
-    parser.add_argument("--output_dir", default="/share/w/ouroutput/xiaorongid=0.2/ir152/target4", type=str)
+    parser.add_argument("--output_dir", default="/share", type=str)
     parser.add_argument("--guidance", type=float, default=5.5)
     parser.add_argument("--num_steps", type=int, default=25)
     parser.add_argument("--attack_start_step", type=int, default=20)
-    parser.add_argument("--inject", type=int, default=2)
+    parser.add_argument("--inject", type=int, default=5)
     parser.add_argument("--seed", type=int, default=2)
 
     parser.add_argument("--offload", action="store_true")
