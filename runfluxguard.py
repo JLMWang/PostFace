@@ -622,7 +622,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_steps", type=int, default=25)
     parser.add_argument("--attack_start_step", type=int, default=20)
     parser.add_argument("--inject", type=int, default=5)
-    parser.add_argument("--seed", type=int, default=2)
+    parser.add_argument("--seed", type=int, default=0)
 
     parser.add_argument("--offload", action="store_true")
     parser.add_argument("--device", type=str, default="cuda:0")
