@@ -479,39 +479,11 @@ def get_classifier_guidance(
                 w_id * L_id
                 + 0.5 * perc_detail
         )
-        #print("L_id", float(L_id), "perc", float(perc_detail), "w_id", w_id)
-
-
         #total_loss = (0.1 * L_id + 1.5 * lpips_loss)
         optimizer.zero_grad(set_to_none=True)
         total_loss.backward()
         #torch.nn.utils.clip_grad_norm_([img_mid], max_norm=1.0)
         # with torch.no_grad():
-        #     if mask_tensor is not None:
-        #         E = mask_tensor.to(img_mid.device, img_mid.dtype)  # 编辑区域
-        #         if ps_mask_tensor is not None:
-        #             # 原转换逻辑
-        #             S = ps_mask_tensor.to(img_mid.device, img_mid.dtype)
-        #             base = outside_grad_factor
-        #             low = 0.6 * base
-        #             high = 0.9 * base
-        #             non_edit_scale = low + (high - low) * S
-        #             grad_scale = E + (1.0 - E) * non_edit_scale
-        #         else:
-        #             # 没有 PS 图时退回原来的统一 2e-5
-        #             grad_scale = E + outside_grad_factor * (1.0 - E)
-        #
-        #         img_mid.grad *= grad_scale
-        #     else:
-        #         # 极端情况：没有编辑 mask，只用 PS 控制整脸（一般不会走到）
-        #         if ps_mask_tensor is not None:
-        #             S = ps_mask_tensor.to(img_mid.device, img_mid.dtype)
-        #             base = outside_grad_factor
-        #             low = 0.2 * base
-        #             high = 1.5 * base
-        #             non_edit_scale = low + (high - low) * S
-        #             img_mid.grad *= non_edit_scale
-                # 否则就不缩放
         optimizer.step()
         adv_iter += 1
 
@@ -586,8 +558,14 @@ def denoise_gen(
     t_vec = torch.empty((img.shape[0],), device=device, dtype=dtype)
     t_vec_mid = torch.empty_like(t_vec)
 
-    for step_idx, (t_curr, t_prev) in enumerate(zip(timesteps[:-1], timesteps[1:])):
+    for step_idx, (t_curr, t_prev) in enumerate(
+            zip(timesteps[:-1], timesteps[1:])
+    ):
         dt = t_prev - t_curr
+
+        # 反演缓存与生成时间步的索引映射
+        pred_cache_idx = total_steps - step_idx
+        mid_cache_idx = total_steps - step_idx - 1
 
         info["step_idx"] = step_idx
         info["total_steps"] = total_steps
@@ -625,8 +603,9 @@ def denoise_gen(
             )
 
             pred_clean_ref = pred_clean.detach()
-            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_list is not None and 0 <= step_idx < len(inv_pred_list):
-                inv_pred = inv_pred_list[step_idx].to(device=device, dtype=dtype)
+            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_list is not None and 0 <= pred_cache_idx < len(
+                    inv_pred_list):
+                inv_pred = inv_pred_list[pred_cache_idx].to(device=device, dtype=dtype)
                 if mask_tensor is not None:
                     pred_clean = mask_tensor * pred_clean + (1.0 - mask_tensor) * inv_pred
 
@@ -647,8 +626,9 @@ def denoise_gen(
                 info=info,
             )
 
-            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_mid_list is not None and 0 <= step_idx < len(inv_pred_mid_list):
-                inv_pred_mid = inv_pred_mid_list[step_idx].to(device=device, dtype=dtype)
+            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_mid_list is not None and 0 <= mid_cache_idx < len(
+                    inv_pred_mid_list):
+                inv_pred_mid = inv_pred_mid_list[mid_cache_idx].to(device=device, dtype=dtype)
                 if mask_tensor is not None:
                     pred_mid_clean = mask_tensor * pred_mid_clean + (1.0 - mask_tensor) * inv_pred_mid
 
@@ -691,8 +671,9 @@ def denoise_gen(
                     info=info,
                 )
 
-            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_list is not None and 0 <= step_idx < len(inv_pred_list):
-                inv_pred = inv_pred_list[step_idx].to(device=device, dtype=dtype)
+            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_list is not None and 0 <= pred_cache_idx < len(
+                    inv_pred_list):
+                inv_pred = inv_pred_list[pred_cache_idx].to(device=device, dtype=dtype)
                 if mask_tensor is not None:
                     pred_adv = mask_tensor * pred_adv + (1.0 - mask_tensor) * inv_pred
 
@@ -714,8 +695,9 @@ def denoise_gen(
                     info=info,
                 )
 
-            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_mid_list is not None and 0 <= step_idx < len(inv_pred_mid_list):
-                inv_pred_mid = inv_pred_mid_list[step_idx].to(device=device, dtype=dtype)
+            if use_inv_pred_set is not None and step_idx in use_inv_pred_set and inv_pred_mid_list is not None and 0 <= mid_cache_idx < len(
+                    inv_pred_mid_list):
+                inv_pred_mid = inv_pred_mid_list[mid_cache_idx].to(device=device, dtype=dtype)
                 if mask_tensor is not None:
                     pred_mid_adv = mask_tensor * pred_mid_adv + (1.0 - mask_tensor) * inv_pred_mid
 
@@ -726,7 +708,7 @@ def denoise_gen(
                 current_img_adv = get_classifier_guidance(img_mid=current_img_adv, clean_latent=current_img,
                                                           clean_rgb_img=clean_rgb_img, tgt_image=tgt_image,
                                                           img_height=img_height, img_width=img_width, device=device,
-                                                          step_idx=step_idx, ae=ae, lr=0.02, state=adv_state,
+                                                          step_idx=step_idx, ae=ae, lr=0.01, state=adv_state,
                                                           mask_tensor=mask_tensor,
                                                           ps_mask_tensor=info.get("ps_mask_tensor", None),
                                                           outside_grad_factor=outside_grad_factor,
